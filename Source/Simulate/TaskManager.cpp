@@ -71,7 +71,7 @@ void ATaskManager::UpdateTasks()
 				if (pickup)
 				{
 					FTaskObject* newTask = new FTaskObject(TaskType::MOVING, pickup->GetActorLocation());
-					FTaskObject* newTask2 = new FTaskObject(TaskType::PICKUP, pickup,.25f);
+					FTaskObject* newTask2 = new FTaskObject(TaskType::PICKUP, pickup,1.0f);
 					personObject->TaskQueue.Enqueue(newTask);
 					personObject->TaskQueue.Enqueue(newTask2);
 				}
@@ -100,6 +100,7 @@ void ATaskManager::UpdateTasks()
 					break;
 				case WAIT:
 				case PICKUP:
+					//Small note, currently only accepts ints for time in seconds
 					personObject->CurrentTask->FinishTime = FDateTime::Now() + FTimespan(0, 0, personObject->CurrentTask->TaskTime);
 					break;
 				case MOVING:
