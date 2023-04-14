@@ -46,10 +46,34 @@ void ATaskManager::TaskCallback(APersonCharacter* person)
 	{
 		if (personLoop->Person == person)
 		{
+			//for now
+			if (personLoop->CurrentTask && personLoop->CurrentTask->ObjectTaskType == TaskType::ATTACK)
+			{
+				personLoop->TaskQueue.Empty();
+			}
+
 			delete personLoop->CurrentTask;
 			personLoop->CurrentTask = nullptr;
 		}
 	}
+}
+
+void ATaskManager::RemovePerson(APersonCharacter* person)
+{
+	FPersonTaskObject* fto = nullptr;
+	for (FPersonTaskObject* ftoIn : _RegisteredPeople)
+	{
+		if (ftoIn->Person == person)
+		{
+			fto = ftoIn;
+			break;
+		}
+	}
+	if (fto)
+	{
+		_RegisteredPeople.Remove(fto);
+	}
+	
 }
 
 void ATaskManager::UpdateTasks()
@@ -59,27 +83,54 @@ void ATaskManager::UpdateTasks()
 	//Do they hear anything
 	//If yes, clear all tasks and move towards what they see/hear
 
-	for (FPersonTaskObject* personObject:_RegisteredPeople)
+	for (FPersonTaskObject* personObject : _RegisteredPeople)
 	{
-		if (!personObject->CurrentTask)
+		if (personObject->Person && personObject->Person->IsDead)
 		{
+			//UE_LOG(LogTemp, Warning, TEXT("SKIP"));
+			continue;
+		}
+
+		if (!personObject->CurrentTask || (
+			personObject->Person->HasEnemyTarget && personObject->CurrentTask && personObject->CurrentTask->ObjectTaskType != TaskType::ATTACK))
+		{
+			//if enemy, clear queue and attack!
+			if (personObject->Person->HasEnemyTarget)
+			{
+				personObject->TaskQueue.Empty();
+			}
+
 			if (personObject->TaskQueue.IsEmpty())
 			{
+				//See enemy
+				//Stop moving, track enemy, and fire
+				if (personObject->Person->HasEnemyTarget)
+				{
+					APersonCharacter* enemy = personObject->Person->GetRelevantEnemy();
+					if (enemy)
+					{
+						FTaskObject* newTask = new FTaskObject(TaskType::ATTACK,enemy);
+						personObject->TaskQueue.Enqueue(newTask);
+					}
+				}
 				//See Pickup
 				//Move to it, then wait
-				APickupObject* pickup = personObject->Person->GetRelevantPickup();
-				if (pickup)
+				else if (personObject->Person->HasPickUpTarget)
 				{
-					FTaskObject* newTask = new FTaskObject(TaskType::MOVING, pickup->GetActorLocation());
-					FTaskObject* newTask2 = new FTaskObject(TaskType::PICKUP, pickup,1.0f);
-					personObject->TaskQueue.Enqueue(newTask);
-					personObject->TaskQueue.Enqueue(newTask2);
+					APickupObject* pickup = personObject->Person->GetRelevantPickup();
+					if (pickup)
+					{
+						FTaskObject* newTask = new FTaskObject(TaskType::MOVING, pickup->GetActorLocation());
+						FTaskObject* newTask2 = new FTaskObject(TaskType::PICKUP, pickup, 1.0f);
+						personObject->TaskQueue.Enqueue(newTask);
+						personObject->TaskQueue.Enqueue(newTask2);
+					}
 				}
 				//Other tasks
 				//last will be random walk
 				else
 				{
-					FTaskObject* newTask2 = new FTaskObject(TaskType::MOVING_RANDOM,5.0f);
+					FTaskObject* newTask2 = new FTaskObject(TaskType::MOVING_RANDOM, 5.0f);
 					personObject->TaskQueue.Enqueue(newTask2);
 				}
 			}
@@ -96,22 +147,25 @@ void ATaskManager::UpdateTasks()
 
 			switch (personObject->CurrentTask->ObjectTaskType)
 			{
-				case NONE:
-					break;
-				case WAIT:
-				case PICKUP:
-					//Small note, currently only accepts ints for time in seconds
-					personObject->CurrentTask->FinishTime = FDateTime::Now() + FTimespan(0, 0, personObject->CurrentTask->TaskTime);
-					break;
-				case MOVING:
-					personObject->Person->MoveToLocation(personObject->CurrentTask->Destination);
-					break;
-				case MOVING_RANDOM:
-					personObject->CurrentTask->FinishTime = FDateTime::Now() + FTimespan(0, 0, personObject->CurrentTask->TaskTime);
-					personObject->Person->MoveToRandomLocation();
-					break;
-				default:
-					break;
+			case NONE:
+				break;
+			case WAIT:
+			case PICKUP:
+				//Small note, currently only accepts ints for time in seconds
+				personObject->CurrentTask->FinishTime = FDateTime::Now() + FTimespan(0, 0, personObject->CurrentTask->TaskTime);
+				break;
+			case MOVING:
+				personObject->Person->MoveToLocation(personObject->CurrentTask->Destination);
+				break;
+			case MOVING_RANDOM:
+				personObject->CurrentTask->FinishTime = FDateTime::Now() + FTimespan(0, 0, personObject->CurrentTask->TaskTime);
+				personObject->Person->MoveToRandomLocation();
+				break;
+			case ATTACK:
+				personObject->Person->AttackEnemy(personObject->CurrentTask->EnemyObject);
+				break;
+			default:
+				break;
 			}
 		}
 		else
@@ -121,7 +175,16 @@ void ATaskManager::UpdateTasks()
 			{
 				if (FDateTime::Now() >= personObject->CurrentTask->FinishTime)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Wait task is complete"));
+					//UE_LOG(LogTemp, Warning, TEXT("Wait task is complete"));
+					TaskCallback(personObject->Person);
+				}
+			}
+			else if (personObject->CurrentTask->ObjectTaskType == TaskType::ATTACK)
+			{
+				if (!personObject->CurrentTask->EnemyObject)
+				{
+					//UE_LOG(LogTemp, Warning, TEXT("Pickup task is cancelled"));
+					//personObject->Person->PickupObject(personObject->CurrentTask->PickupObject);
 					TaskCallback(personObject->Person);
 				}
 			}
@@ -129,23 +192,23 @@ void ATaskManager::UpdateTasks()
 			{
 				if (FDateTime::Now() >= personObject->CurrentTask->FinishTime)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Pickup task is complete"));
+					//UE_LOG(LogTemp, Warning, TEXT("Pickup task is complete"));
 					personObject->Person->PickupObject(personObject->CurrentTask->PickupObject);
 					TaskCallback(personObject->Person);
 				}
 				else if (!personObject->CurrentTask->PickupObject)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Pickup task is cancelled"));
+					//UE_LOG(LogTemp, Warning, TEXT("Pickup task is cancelled"));
 					personObject->Person->PickupObject(personObject->CurrentTask->PickupObject);
 					TaskCallback(personObject->Person);
 				}
 			}
 			else if (personObject->CurrentTask->ObjectTaskType == TaskType::MOVING_RANDOM)
 			{
-				if (personObject->Person->HasPickUpTarget ||
+				if (personObject->Person->HasPickUpTarget || personObject->Person->HasEnemyTarget ||
 					FDateTime::Now() >= personObject->CurrentTask->FinishTime)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Random move is complete"));
+					//UE_LOG(LogTemp, Warning, TEXT("Random move is complete"));
 					personObject->Person->StopMovement();
 					TaskCallback(personObject->Person);
 				}

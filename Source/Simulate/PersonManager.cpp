@@ -11,13 +11,11 @@ APersonManager::APersonManager()
 
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("PersonManagerParent")));
 
-	USceneComponent* sp1 = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPoint1"));
-	sp1->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	SpawnPoints.Add(sp1);
+	SpawnPointTL = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPointTL"));
+	SpawnPointTL->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
-	USceneComponent* sp2 = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPoint2"));
-	sp2->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	SpawnPoints.Add(sp2);
+	SpawnPointBR = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPointBR"));
+	SpawnPointBR->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts or when spawned
@@ -25,13 +23,10 @@ void APersonManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[0]->GetComponentLocation(), FRotator::ZeroRotator));
-	CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[1]->GetComponentLocation(), FRotator::ZeroRotator));
+	//CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[0]->GetComponentLocation(), FRotator::ZeroRotator));
+	//CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[1]->GetComponentLocation(), FRotator::ZeroRotator));
+	SpawnPeople();
 
-	for (int i = 0; i < CreatedPeople.Num(); i++)
-	{
-		TaskManager->RegisterPerson(CreatedPeople[i]);
-	}
 }
 
 // Called every frame
@@ -39,5 +34,19 @@ void APersonManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void APersonManager::SpawnPeople()
+{
+	FVector topLeftExtent = SpawnPointTL->GetComponentLocation();
+	FVector bottomRightExtent = SpawnPointBR->GetComponentLocation();
+
+	for (int i = 0; i < FMath::RandRange(MIN_PEOPLE_SPAWN, MAX_PEOPLE_SPAWN); i++)
+	{
+		FVector spawnLocation = FVector(FMath::RandRange(topLeftExtent.X, bottomRightExtent.X), FMath::RandRange(topLeftExtent.Y, bottomRightExtent.Y), 0);
+		APersonCharacter* tempChar = GetWorld()->SpawnActor<APersonCharacter>(Person1, spawnLocation, FRotator::ZeroRotator);
+		CreatedPeople.Add(tempChar);
+		TaskManager->RegisterPerson(tempChar);
+	}
 }
 

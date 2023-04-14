@@ -28,7 +28,10 @@ protected:
 	TSubclassOf<APersonCharacter> Person1;
 
 	UPROPERTY(EditDefaultsOnly)
-	TArray<USceneComponent*> SpawnPoints;
+	USceneComponent* SpawnPointTL;
+
+	UPROPERTY(EditDefaultsOnly)
+	USceneComponent* SpawnPointBR;
 
 	UPROPERTY(EditInstanceOnly)
 	ATaskManager* TaskManager;
@@ -39,5 +42,10 @@ public:
 
 private:
 	TArray<APersonCharacter*> CreatedPeople;
+
+	void SpawnPeople();
+
+	const int MIN_PEOPLE_SPAWN = 10;
+	const int MAX_PEOPLE_SPAWN = 20;
 
 };

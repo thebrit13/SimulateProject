@@ -15,6 +15,7 @@ enum TaskType
 	MOVING_RANDOM,
 	MOVING,
 	PICKUP,
+	ATTACK,
 	WAIT
 };
 
@@ -22,7 +23,8 @@ struct FTaskObject
 {
 	TaskType ObjectTaskType = NONE;
 	FVector Destination = FVector::ZeroVector;
-	APickupObject* PickupObject;
+	APickupObject* PickupObject = nullptr;
+	APersonCharacter* EnemyObject = nullptr;
 	float TaskTime = -1;
 	FDateTime FinishTime;
 
@@ -31,6 +33,12 @@ struct FTaskObject
 		ObjectTaskType = tt;
 		PickupObject = pickupObject;
 		TaskTime = taskTime;
+	}
+
+	FTaskObject(TaskType tt, APersonCharacter* enemyObject)
+	{
+		ObjectTaskType = tt;
+		EnemyObject = enemyObject;
 	}
 
 	FTaskObject(TaskType tt, FVector destination)
@@ -89,6 +97,8 @@ private:
 	TArray<FPersonTaskObject*> _RegisteredPeople;
 
 	void UpdateTasks();
+
+	void RemovePerson(APersonCharacter* person);
 
 };
 

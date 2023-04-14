@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 #include "PickupObject.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "PersonCharacter.generated.h"
 
 UCLASS()
@@ -49,6 +50,8 @@ public:
 
 	APickupObject* GetRelevantPickup();
 
+	APersonCharacter* GetRelevantEnemy();
+
 	void PickupObject(APickupObject* pickupObj);
 
 	UFUNCTION(BlueprintImplementableEvent)
@@ -60,10 +63,36 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void StopMovement();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void LookAtAndTryAndHitEnemy(const FVector& loc);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void Death();
+
+	void AttackEnemy(APersonCharacter* enemy);
+
 	bool HasPickUpTarget = false;
+	bool HasEnemyTarget = false;
+	bool IsDead = false;
+
+	//UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	//bool IsTrackingEnemy = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	APersonCharacter* CurrentEnemy = nullptr;
 
 private:
-	TQueue<APickupObject*> _ActiveSeenObjects;
+	TQueue<APickupObject*> _ActiveSeenPickupObjects;
+	TQueue<APersonCharacter*> _ActiveSeenEnemies;
 
 	TFunction<void(APersonCharacter*)> _TaskCallback;
+
+	bool IsObjectWithinVisionCone(FTransform selfTrans, FVector objLocation);
+
+	bool IsEnemyWithinKillCone(FTransform selfTrans, FVector objLocation);
+
+	const int VISION_CONE_SIZE = 90;
+	const int KILL_CONE_SIZE = 5;
+
+	void EnemyKilled();
 };

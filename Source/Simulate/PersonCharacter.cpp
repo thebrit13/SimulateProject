@@ -22,11 +22,22 @@ void APersonCharacter::BeginPlay()
 
 void APersonCharacter::SomethingSeenCallback(AActor* seenActor)
 {
+	if (!IsObjectWithinVisionCone(GetActorTransform(), seenActor->GetActorLocation()))
+	{
+		return;
+	}
+
 	if (seenActor->IsA(APickupObject::StaticClass()))
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("PICK SEEN"));
-		_ActiveSeenObjects.Enqueue(Cast<APickupObject>(seenActor));
+		_ActiveSeenPickupObjects.Enqueue(Cast<APickupObject>(seenActor));
 		HasPickUpTarget = true;
+	}
+	else if (seenActor->IsA(APersonCharacter::StaticClass()))
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("ENEMY SEEN"));
+		_ActiveSeenEnemies.Enqueue(Cast<APersonCharacter>(seenActor));
+		HasEnemyTarget = true;
 	}
 }
 
@@ -53,6 +64,13 @@ void APersonCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (CurrentEnemy)
+	{
+		if (IsEnemyWithinKillCone(GetActorTransform(), CurrentEnemy->GetActorLocation()))
+		{
+			EnemyKilled();
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -70,9 +88,19 @@ void APersonCharacter::RegisterTaskCallback(TFunction<void(APersonCharacter*)> c
 APickupObject* APersonCharacter::GetRelevantPickup()
 {
 	APickupObject* returnObj = nullptr;
-	if (!_ActiveSeenObjects.IsEmpty())
+	if (!_ActiveSeenPickupObjects.IsEmpty())
 	{
-		_ActiveSeenObjects.Dequeue(returnObj);
+		_ActiveSeenPickupObjects.Dequeue(returnObj);
+	}
+	return returnObj;
+}
+
+APersonCharacter* APersonCharacter::GetRelevantEnemy()
+{
+	APersonCharacter* returnObj = nullptr;
+	if (!_ActiveSeenEnemies.IsEmpty())
+	{
+		_ActiveSeenEnemies.Dequeue(returnObj);
 	}
 	return returnObj;
 }
@@ -84,5 +112,69 @@ void APersonCharacter::PickupObject(APickupObject* pickupObj)
 		GetWorld()->DestroyActor(pickupObj);
 	}
 	HasPickUpTarget = false;
+	if (_TaskCallback)
+	{
+		_TaskCallback(this);
+	}
+}
+
+
+//Myabe change to track enemy
+//Probably need to look at enemy
+//Make sure they can hit them
+//Then destroy them
+void APersonCharacter::AttackEnemy(APersonCharacter* enemy)
+{	
+	StopMovement();
+	if (enemy)
+	{
+		CurrentEnemy = enemy;
+	}
+}
+
+bool APersonCharacter::IsObjectWithinVisionCone(FTransform selfTrans, FVector objLocation)
+{
+	FRotator rotator = UKismetMathLibrary::FindRelativeLookAtRotation(selfTrans, objLocation);
+	//UE_LOG(LogTemp, Warning, TEXT("%f"), rotator.Yaw);
+	if (FMath::Abs(rotator.Yaw) < VISION_CONE_SIZE)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool APersonCharacter::IsEnemyWithinKillCone(FTransform selfLocation, FVector objLocation)
+{
+	FRotator rotator = UKismetMathLibrary::FindRelativeLookAtRotation(selfLocation, objLocation);
+	//UE_LOG(LogTemp, Warning, TEXT("Check %f"),rotator.Yaw);
+	if (FMath::Abs(rotator.Yaw) < KILL_CONE_SIZE)
+	{
+		return true;
+	}
+	return false;
+}
+
+void APersonCharacter::EnemyKilled()
+{
+	if (IsDead)
+	{
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("KILL"));
+	HasEnemyTarget = false;
+
+	if (CurrentEnemy)
+	{
+		CurrentEnemy->Death();
+		CurrentEnemy->StopMovement();
+		CurrentEnemy->IsDead = true;
+		//GetWorld()->DestroyActor(CurrentEnemy);
+		CurrentEnemy = nullptr;
+	}
+
+	if (_TaskCallback)
+	{
+		_TaskCallback(this);
+	}
 }
 
