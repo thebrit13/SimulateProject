@@ -92,6 +92,10 @@ APickupObject* APersonCharacter::GetRelevantPickup()
 	{
 		_ActiveSeenPickupObjects.Dequeue(returnObj);
 	}
+	if (!returnObj)
+	{
+		HasPickUpTarget = false;
+	}
 	return returnObj;
 }
 
@@ -168,13 +172,13 @@ void APersonCharacter::EnemyKilled()
 		CurrentEnemy->Death();
 		CurrentEnemy->StopMovement();
 		CurrentEnemy->IsDead = true;
-		//GetWorld()->DestroyActor(CurrentEnemy);
 		CurrentEnemy = nullptr;
 	}
 
-	if (_TaskCallback)
-	{
-		_TaskCallback(this);
-	}
+	//let task manager handle it?
+	//if (_TaskCallback)
+	//{
+	//	_TaskCallback(this);
+	//}
 }
 

@@ -127,18 +127,13 @@ void ATaskManager::UpdateTasks()
 					}
 				}
 				//Other tasks
-				//last will be random walk
-				else
-				{
-					FTaskObject* newTask2 = new FTaskObject(TaskType::MOVING_RANDOM, 5.0f);
-					personObject->TaskQueue.Enqueue(newTask2);
-				}
 			}
 
-			//Nothing to do, just return for now
+			//Nothing to do, just walk around
 			if (personObject->TaskQueue.IsEmpty())
 			{
-				continue;
+				FTaskObject* newTask2 = new FTaskObject(TaskType::MOVING_RANDOM, 5.0f);
+				personObject->TaskQueue.Enqueue(newTask2);
 			}
 
 			//Execute new task
@@ -181,7 +176,7 @@ void ATaskManager::UpdateTasks()
 			}
 			else if (personObject->CurrentTask->ObjectTaskType == TaskType::ATTACK)
 			{
-				if (!personObject->CurrentTask->EnemyObject)
+				if (!personObject->CurrentTask->EnemyObject || (personObject->CurrentTask->EnemyObject && personObject->CurrentTask->EnemyObject->IsDead))
 				{
 					//UE_LOG(LogTemp, Warning, TEXT("Pickup task is cancelled"));
 					//personObject->Person->PickupObject(personObject->CurrentTask->PickupObject);
