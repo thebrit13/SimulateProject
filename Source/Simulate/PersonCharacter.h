@@ -7,6 +7,8 @@
 #include "Components/CapsuleComponent.h"
 #include "PickupObject.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PersonData.h"
+#include "SimulateGameStateBase.h"
 #include "PersonCharacter.generated.h"
 
 UCLASS()
@@ -17,6 +19,7 @@ class SIMULATE_API APersonCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	APersonCharacter();
+	~APersonCharacter();
 
 protected:
 	// Called when the game starts or when spawned
@@ -80,6 +83,8 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	APersonCharacter* CurrentEnemy = nullptr;
+
+	PersonData* PersonData = nullptr;
 
 private:
 	TQueue<APickupObject*> _ActiveSeenPickupObjects;

@@ -8,6 +8,9 @@
 #include "Components/CapsuleComponent.h"
 #include "PickupObject.generated.h"
 
+const FString PICKUP_FOOD = "Food";
+const FString PICKUP_WATER = "Water";
+const FString PICKUP_AMMO = "Ammo";
 
 UCLASS()
 class SIMULATE_API APickupObject : public AActor
@@ -18,6 +21,14 @@ public:
 	// Sets default values for this actor's properties
 	APickupObject();
 
+	void Setup(FString ID, FString pType);
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	FString ID;
+	FString PickUpType;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -27,9 +38,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	UCapsuleComponent* CollisionParent;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };

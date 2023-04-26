@@ -42,7 +42,11 @@ void AObjectManager::CreateObjects()
 	for (int i = 0; i < FMath::RandRange(MIN_SPAWN_COUNT, MAX_SPAWN_COUNT); i++)
 	{
 		FVector spawnLocation = FVector(FMath::RandRange(topLeftExtent.X, bottomRightExtent.X), FMath::RandRange(topLeftExtent.Y, bottomRightExtent.Y), 0);
-		GetWorld()->SpawnActor<APickupObject>(PickUpObject1, spawnLocation, FRotator::ZeroRotator);
+		APickupObject* tempObject = GetWorld()->SpawnActor<APickupObject>(PickUpObject1, spawnLocation, FRotator::ZeroRotator);
+		if (tempObject)
+		{
+			tempObject->Setup(FString::Printf(TEXT("ID_%d"), _CreatedObjectCount), PICKUP_AMMO);
+		}
 	}
 }
 

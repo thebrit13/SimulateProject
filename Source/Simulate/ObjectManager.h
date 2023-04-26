@@ -8,14 +8,18 @@
 #include "Components/SceneComponent.h"
 #include "ObjectManager.generated.h"
 
+
 UCLASS()
 class SIMULATE_API AObjectManager : public AActor
 {
 	GENERATED_BODY()
-	
+
 public:	
 	// Sets default values for this actor's properties
 	AObjectManager();
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -29,11 +33,6 @@ protected:
 
 	UPROPERTY(EditInstanceOnly)
 	USceneComponent* SpawnLocationBR;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 private:
 	
 	const int MAX_SPAWN_COUNT = 10;
@@ -41,4 +40,5 @@ private:
 
 	void CreateObjects();
 
+	int _CreatedObjectCount = 0;
 };

@@ -7,6 +7,7 @@
 #include "PersonCharacter.h"
 #include "TaskManager.h"
 #include "Components/SceneComponent.h"
+#include "SimulateGameStateBase.h"
 #include "PersonManager.generated.h"
 
 UCLASS()
@@ -43,9 +44,12 @@ public:
 private:
 	TArray<APersonCharacter*> CreatedPeople;
 
-	void SpawnPeople();
+	void SpawnPeople(bool firstGame);
 
 	const int MIN_PEOPLE_SPAWN = 10;
 	const int MAX_PEOPLE_SPAWN = 20;
 
+	int _RunningIDCount = 0;
+
+	ASimulateGameStateBase* _GameStateRef = nullptr;
 };

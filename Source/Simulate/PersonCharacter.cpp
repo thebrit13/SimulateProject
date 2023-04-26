@@ -11,6 +11,12 @@ APersonCharacter::APersonCharacter()
 
 	VisionCollider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("VisionCollider"));
 	VisionCollider->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
+}
+
+APersonCharacter::~APersonCharacter()
+{
+	delete PersonData;
 }
 
 // Called when the game starts or when spawned
@@ -113,6 +119,7 @@ void APersonCharacter::PickupObject(APickupObject* pickupObj)
 {
 	if (pickupObj)
 	{
+		PersonData->AddToInventory(pickupObj->PickUpType, 1);
 		GetWorld()->DestroyActor(pickupObj);
 	}
 	HasPickUpTarget = false;
@@ -166,13 +173,25 @@ void APersonCharacter::EnemyKilled()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("KILL"));
 	HasEnemyTarget = false;
+	bool HasWon = false;
+
+	ASimulateGameStateBase* gameStateRef = (ASimulateGameStateBase*)GetWorld()->GetGameState();
 
 	if (CurrentEnemy)
 	{
+		HasWon = (gameStateRef->RemoveFromAliveList(CurrentEnemy->PersonData->PersonID));
 		CurrentEnemy->Death();
 		CurrentEnemy->StopMovement();
 		CurrentEnemy->IsDead = true;
 		CurrentEnemy = nullptr;
+		PersonData->AddToInventory(TEXT("KILL"), 1);
+	}
+
+	if (HasWon)
+	{
+		StopMovement();
+		gameStateRef->SetWinner(PersonData->PersonID);
+		UE_LOG(LogTemp, Warning, TEXT("WINNER"));
 	}
 
 	//let task manager handle it?

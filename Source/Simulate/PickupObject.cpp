@@ -16,6 +16,12 @@ APickupObject::APickupObject()
 	CollisionParent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
+void APickupObject::Setup(FString id, FString pType)
+{
+	this->ID = id;
+	this->PickUpType = pType;
+}
+
 // Called when the game starts or when spawned
 void APickupObject::BeginPlay()
 {

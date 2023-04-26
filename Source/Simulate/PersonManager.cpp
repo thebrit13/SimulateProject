@@ -22,10 +22,16 @@ APersonManager::APersonManager()
 void APersonManager::BeginPlay()
 {
 	Super::BeginPlay();
+	_GameStateRef = (ASimulateGameStateBase*)GetWorld()->GetGameState();
+
+	_GameStateRef->SetGameOverCallback(([this](FString winnerID) {
+			SpawnPeople(false);
+		}));
+	_GameStateRef->StartNewGame();
 	
 	//CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[0]->GetComponentLocation(), FRotator::ZeroRotator));
 	//CreatedPeople.Add(GetWorld()->SpawnActor<APersonCharacter>(Person1, SpawnPoints[1]->GetComponentLocation(), FRotator::ZeroRotator));
-	SpawnPeople();
+	SpawnPeople(true);
 
 }
 
@@ -36,7 +42,7 @@ void APersonManager::Tick(float DeltaTime)
 
 }
 
-void APersonManager::SpawnPeople()
+void APersonManager::SpawnPeople(bool firstGame)
 {
 	FVector topLeftExtent = SpawnPointTL->GetComponentLocation();
 	FVector bottomRightExtent = SpawnPointBR->GetComponentLocation();
@@ -45,8 +51,19 @@ void APersonManager::SpawnPeople()
 	{
 		FVector spawnLocation = FVector(FMath::RandRange(topLeftExtent.X, bottomRightExtent.X), FMath::RandRange(topLeftExtent.Y, bottomRightExtent.Y), 0);
 		APersonCharacter* tempChar = GetWorld()->SpawnActor<APersonCharacter>(Person1, spawnLocation, FRotator::ZeroRotator);
+
+		if (!tempChar)
+		{
+			continue;
+		}
+
+		tempChar->PersonData = new PersonData(FString::Printf(TEXT("PERSON_%d"), _RunningIDCount), FString::Printf(TEXT("NAME_PERSON_%d"), _RunningIDCount));
+
 		CreatedPeople.Add(tempChar);
 		TaskManager->RegisterPerson(tempChar);
+		_GameStateRef->AddToAliveList(tempChar->PersonData->PersonID);
+
+		_RunningIDCount++;
 	}
 }
 
